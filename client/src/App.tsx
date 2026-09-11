@@ -14,6 +14,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
+import CommunityGroundIntelligencePage from "./pages/CommunityGroundIntelligencePage";
 
 export default function App() {
   return (
@@ -31,6 +32,9 @@ export default function App() {
               <Route path="/login" component={LoginPage} />
               <Route path="/signup" component={SignupPage} />
               <Route path="/settings" component={SettingsPage} />
+              <Route path="/community-ground-intelligence" component={CommunityGroundIntelligencePage} />
+              <Route path="/community-reports" component={CommunityGroundIntelligencePage} />
+              <Route path="/report-review" component={CommunityGroundIntelligencePage} />
               <Route component={NotFound} />
             </Switch>
           </TooltipProvider>

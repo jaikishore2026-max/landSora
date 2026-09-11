@@ -179,6 +179,10 @@ export default function LandingPage() {
             <Sparkles size={13} className="text-amber-400" />
             <span>AI Companion</span>
           </Link>
+          <Link href="/community-ground-intelligence" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-orange-300 hover:text-orange-200 font-semibold border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 transition-all">
+            <Compass size={13} className="text-orange-400" />
+            <span>Report Ground Condition</span>
+          </Link>
 
           <Link href="/login" className="nav-auth-link">
             Sign In
