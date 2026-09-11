@@ -271,7 +271,72 @@ In mountain terrain, cellular networks frequently fail during severe storms. Lan
 
 ---
 
-## 🔄 8. End-to-End Data Lifecycle Walkthrough
+## 🤝 8. Community Ground Intelligence (No-Sensor Rural Monitoring)
+
+Community Ground Intelligence is an additive monitoring layer for rural areas where physical field sensors have not yet been installed. It does not modify the existing live console, telemetry pipeline, risk score, or warning controls.
+
+### Public entry points
+
+The client exposes the feature through separate routes:
+
+- **`/community-ground-intelligence`** — report form, offline status, advisory, public-data context, community map, and expansion roadmap.
+- **`/community-reports`** — saved community report cards and media previews.
+- **`/report-review`** — protected review workspace for authenticated administrators.
+
+The landing page adds **Report Ground Condition** as a new navigation action while retaining every existing navigation item and console action.
+
+### Report schema and local durability
+
+Residents, drivers, volunteers, farmers, local officials, and emergency workers can submit:
+
+- Category: cracks, rockfall, mudslide, blocked drainage, seepage, leaning trees or poles, road blockage, unusual slope activity, or other.
+- Severity: `Low`, `Moderate`, `High`, or `Critical`.
+- Description, optional photo, optional short video, GPS coordinates or a manually selected map coordinate.
+- Optional reporter name and phone number, observation date/time, and explicit consent.
+
+Until a community-report backend is connected, reports are serialized in browser `localStorage` under `landsora-community-ground-reports`. Each newly submitted record starts at **`Pending upload`**. A temporary loss of connectivity does not discard the record; the UI shows the offline state and reports remain visible in the Community Reports page. When the browser returns online, the client attempts synchronization and explicitly leaves records queued when no backend is configured rather than pretending that upload succeeded.
+
+### Review and verification lifecycle
+
+The public dashboard exposes report content and provenance, but never administrator controls. The review route checks both authentication and the existing `user.role === "admin"` authorization value before rendering review controls. Authorized reviewers can filter by category, severity, status, and location coordinates; sort by newest or highest severity; add notes; and transition reports through:
+
+```text
+Pending upload → Unverified → Under review → Corroborated → Field verified → Closed
+```
+
+`Corroborated` and `Field verified` are reviewer states, not automated claims. Community reports are never treated as equivalent to physical sensors.
+
+### Map and public-data rules
+
+The separate community map renders report markers only, with the following state colors:
+
+- Gray — Pending upload
+- Yellow — Unverified
+- Orange — Under review
+- Blue — Corroborated
+- Red — Field verified high-severity report
+- Green — Closed
+
+The map does not add fictional sensor stations. Rainfall, weather, terrain, historical incidents, and satellite observations are marked unavailable until a real connected source provides a timestamped value. Every public-data card displays source, timestamp, age, confidence, data type, and availability.
+
+The Community Advisory card is decision support only and includes the following safety boundary:
+
+> This is an automated advisory based on available public data and community reports. It is not an official evacuation order. Follow instructions from local authorities.
+
+The feature is explicitly labeled: **Community and public-data feature — physical field sensors are not yet installed.**
+
+### Expansion roadmap
+
+The additive roadmap is intentionally separate from the current operational console:
+
+1. Public data and community reporting.
+2. Partnerships with local authorities and universities.
+3. Pilot rain gauges and ground sensors.
+4. Validated local early-warning system.
+
+---
+
+## 🔄 9. End-to-End Data Lifecycle Walkthrough
 
 To see how all these pieces fit together, let's trace a single physical event from the mountain slope to the operator's screen:
 
