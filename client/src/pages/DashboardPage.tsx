@@ -15,6 +15,7 @@ import { LiveMeteorologyModal } from "@/components/LiveMeteorologyModal";
 import { InteractiveGisMap, type GisZone, type NasaEvent } from "@/components/InteractiveGisMap";
 import { useCriticalRiskToast } from "@/contexts/CriticalRiskToastContext";
 import { getDataPresentation } from "@/lib/dataPresentation";
+import WeatherTelemetryModule from "@/components/WeatherTelemetryModule";
 
 import { useTranslation } from "@/lib/useTranslation";
 import {
@@ -262,6 +263,7 @@ export default function DashboardPage() {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const [bottomDrawerOpen, setBottomDrawerOpen] = useState(false);
+  const [weatherTelemetryOpen, setWeatherTelemetryOpen] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState("");
   const [selectedContinent, setSelectedContinent] = useState<ContinentCode>("ALL");
@@ -1466,6 +1468,18 @@ Disclaimer: Landsora is an IoT early warning and risk decision-support platform.
               <BarChart3 size={12} className="text-amber-400" />
               <span>{bottomDrawerOpen ? t("HIDE TELEMETRY & LOGS ▼") : t("📊 TELEMETRY & FIELD REPORTS ▲")}</span>
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setWeatherTelemetryOpen((prev) => !prev);
+                setBottomDrawerOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-none bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/35 text-[11px] font-bold transition-all"
+              title="Open-Meteo weather and physical sensor fallback telemetry"
+            >
+              <CloudRain size={12} className="text-cyan-300" />
+              <span>{weatherTelemetryOpen ? "HIDE WEATHER TELEMETRY" : "WEATHER TELEMETRY"}</span>
+            </button>
           </div>
         </div>
 
@@ -1495,6 +1509,25 @@ Disclaimer: Landsora is an IoT early warning and risk decision-support platform.
 
             {/* Drawer Scrollable Content */}
             <div className="p-4 overflow-y-auto space-y-6 scrollbar-thin">
+              {weatherTelemetryOpen && (
+                <section className="border border-cyan-500/30 bg-[#11171D]/80 p-4">
+                  <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3 mb-4">
+                    <div>
+                      <div className="text-[10px] font-mono font-bold tracking-[0.12em] text-cyan-300">WEATHER TELEMETRY &amp; FALLBACK</div>
+                      <p className="text-[11px] text-stone-400 mt-1">Open-Meteo rainfall and existing ground telemetry, embedded in the console.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setWeatherTelemetryOpen(false)}
+                      className="px-2 py-1 text-[10px] font-mono text-stone-400 hover:text-white border border-white/10"
+                    >
+                      HIDE
+                    </button>
+                  </div>
+                  <WeatherTelemetryModule embedded />
+                </section>
+              )}
+
               {/* Lower Telemetry & Explainability Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-start">
                 <div className="chart-panel panel md:col-span-2 lg:col-span-5">

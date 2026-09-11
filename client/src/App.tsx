@@ -15,6 +15,11 @@ import SignupPage from "./pages/SignupPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import CommunityGroundIntelligencePage from "./pages/CommunityGroundIntelligencePage";
+import WeatherTelemetryModule from "./components/WeatherTelemetryModule";
+
+function WeatherFallbackRoute() {
+  return <WeatherTelemetryModule />;
+}
 
 export default function App() {
   return (
@@ -35,6 +40,7 @@ export default function App() {
               <Route path="/community-ground-intelligence" component={CommunityGroundIntelligencePage} />
               <Route path="/community-reports" component={CommunityGroundIntelligencePage} />
               <Route path="/report-review" component={CommunityGroundIntelligencePage} />
+              <Route path="/weather-fallback" component={WeatherFallbackRoute} />
               <Route component={NotFound} />
             </Switch>
           </TooltipProvider>
