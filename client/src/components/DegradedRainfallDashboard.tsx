@@ -5,6 +5,12 @@ type RainfallData = {
   millimeters: number;
   observedAt: Date;
 };
+type WeatherMode = "live" | "historical";
+
+const HISTORICAL_WAYANAD_RAINFALL: RainfallData = {
+  millimeters: 41.5,
+  observedAt: new Date("2024-07-30T00:00:00Z"),
+};
 
 type UseRainfallResult = {
   rainfall: RainfallData;
@@ -97,6 +103,7 @@ const styles: Record<string, CSSProperties> = {
     fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
     boxSizing: "border-box",
   },
+  historicalBadge: { display: "inline-flex", alignItems: "center", padding: "0.3rem 0.6rem", color: "#bfdbfe", backgroundColor: "#172554", border: "1px solid #3b82f6", borderRadius: "999px", fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.06em" },
   toolbar: {
     display: "flex",
     alignItems: "center",
@@ -108,6 +115,8 @@ const styles: Record<string, CSSProperties> = {
   title: { margin: 0, color: "#f8fafc", fontSize: "1rem", fontWeight: 750 },
   toggleLabel: { display: "flex", alignItems: "center", gap: "0.6rem", color: "#cbd5e1", fontSize: "0.82rem" },
   toggle: { width: "1rem", height: "1rem", accentColor: "#f59e0b", cursor: "pointer" },
+  modeToggle: { padding: "0.55rem 0.8rem", color: "#fed7aa", backgroundColor: "#24170d", border: "1px solid #9a5b24", borderRadius: "0.4rem", cursor: "pointer", fontSize: "0.78rem", fontWeight: 700 },
+  modeToggleActive: { color: "#bfdbfe", backgroundColor: "#172554", borderColor: "#3b82f6" },
   banner: {
     display: "flex",
     alignItems: "flex-start",
@@ -159,7 +168,7 @@ export function DegradedRainfallDashboard() {
     setForceApiFailure,
     refresh,
   } = useRainfallData();
-  const [pastSimulationEnabled, setPastSimulationEnabled] = useState(false);
+  const [weatherMode, setWeatherMode] = useState<WeatherMode>("live");
   const historicalSimulation = trpc.risk.historicalSimulation.useQuery(
     {
       rainfallMmHr: 41.5,
@@ -167,8 +176,10 @@ export function DegradedRainfallDashboard() {
       historicalBaselineScore: 85,
       nasaEonetScore: 75,
     },
-    { enabled: pastSimulationEnabled },
+    { enabled: weatherMode === "historical" },
   );
+  const isHistoricalMode = weatherMode === "historical";
+  const displayedRainfall = isHistoricalMode ? HISTORICAL_WAYANAD_RAINFALL : rainfall;
 
   return (
     <section style={styles.section} aria-labelledby="rainfall-dashboard-title">
@@ -185,18 +196,17 @@ export function DegradedRainfallDashboard() {
           />
           Force API Failure
         </label>
-        <label style={styles.toggleLabel}>
-          <input
-            type="checkbox"
-            checked={pastSimulationEnabled}
-            onChange={(event) => setPastSimulationEnabled(event.target.checked)}
-            style={styles.toggle}
-          />
-          Replay 2024 Wayanad event
-        </label>
+        <button
+          type="button"
+          aria-pressed={isHistoricalMode}
+          onClick={() => setWeatherMode(current => current === "live" ? "historical" : "live")}
+          style={{ ...styles.modeToggle, ...(isHistoricalMode ? styles.modeToggleActive : {}) }}
+        >
+          {isHistoricalMode ? "Switch to Live Weather" : "Switch to Historical Test"}
+        </button>
       </div>
 
-      {pastSimulationEnabled && (
+      {isHistoricalMode && (
         <div style={styles.simulationCard} aria-live="polite">
           <div style={styles.metadata}>HISTORICAL SIMULATION · 2024 WAYANAD EVENT</div>
           <div style={styles.simulationInputs}>
@@ -218,7 +228,7 @@ export function DegradedRainfallDashboard() {
         </div>
       )}
 
-      {isDegraded && (
+      {!isHistoricalMode && isDegraded && (
         <div role="alert" style={styles.banner}>
           <span aria-hidden="true" style={styles.icon}>
             !
@@ -232,17 +242,17 @@ export function DegradedRainfallDashboard() {
       <div style={styles.reading}>
         <div>
           <div style={styles.metadata}>24-hour accumulated rainfall</div>
-          <strong style={styles.value}>{rainfall.millimeters} mm</strong>
+          <strong style={styles.value}>{displayedRainfall.millimeters} mm</strong>
         </div>
-        <span style={isDegraded ? styles.badge : { ...styles.badge, color: "#bbf7d0", backgroundColor: "#14532d", borderColor: "#22c55e" }}>
-          {isDegraded ? "SIGNAL QUALITY: DEGRADED" : "SIGNAL QUALITY: GOOD"}
+        <span style={isHistoricalMode ? styles.historicalBadge : (isDegraded ? styles.badge : { ...styles.badge, color: "#bbf7d0", backgroundColor: "#14532d", borderColor: "#22c55e" })}>
+          {isHistoricalMode ? "MODE: HISTORICAL TEST" : (isDegraded ? "SIGNAL QUALITY: DEGRADED" : "SIGNAL QUALITY: GOOD")}
         </span>
       </div>
 
       <button
         type="button"
         onClick={refresh}
-        disabled={isLoading}
+        disabled={isLoading || isHistoricalMode}
         style={{
           marginTop: "1rem",
           padding: "0.55rem 0.8rem",
@@ -251,10 +261,10 @@ export function DegradedRainfallDashboard() {
           border: "1px solid #3a4250",
           borderRadius: "0.4rem",
           cursor: isLoading ? "wait" : "pointer",
-          opacity: isLoading ? 0.6 : 1,
+          opacity: isLoading || isHistoricalMode ? 0.6 : 1,
         }}
       >
-        {isLoading ? "Refreshing..." : "Refresh rainfall data"}
+        {isHistoricalMode ? "Live refresh bypassed in Historical Test mode" : (isLoading ? "Refreshing..." : "Refresh rainfall data")}
       </button>
     </section>
   );
