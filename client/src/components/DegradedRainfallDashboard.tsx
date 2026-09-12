@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { trpc } from "@/lib/trpc";
 
 type RainfallData = {
   millimeters: number;
@@ -142,6 +143,11 @@ const styles: Record<string, CSSProperties> = {
   },
   value: { color: "#f8fafc", fontSize: "2rem", fontWeight: 750 },
   metadata: { color: "#94a3b8", fontSize: "0.78rem" },
+  simulationCard: { marginTop: "1rem", padding: "0.9rem 1rem", color: "#fed7aa", backgroundColor: "#24170d", border: "1px solid #9a5b24", borderRadius: "0.5rem" },
+  simulationInputs: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(9rem, 1fr))", gap: "0.45rem", margin: "0.7rem 0", color: "#cbd5e1", fontSize: "0.78rem" },
+  simulationResult: { margin: "0.7rem 0 0", color: "#fca5a5", fontSize: "1rem" },
+  disclaimer: { color: "#c4a484", fontSize: "0.7rem" },
+  error: { color: "#fca5a5", fontSize: "0.78rem" },
 };
 
 export function DegradedRainfallDashboard() {
@@ -153,6 +159,16 @@ export function DegradedRainfallDashboard() {
     setForceApiFailure,
     refresh,
   } = useRainfallData();
+  const [pastSimulationEnabled, setPastSimulationEnabled] = useState(false);
+  const historicalSimulation = trpc.risk.historicalSimulation.useQuery(
+    {
+      rainfallMmHr: 41.5,
+      tiltDegreesPerHour: 0.22,
+      historicalBaselineScore: 85,
+      nasaEonetScore: 75,
+    },
+    { enabled: pastSimulationEnabled },
+  );
 
   return (
     <section style={styles.section} aria-labelledby="rainfall-dashboard-title">
@@ -169,7 +185,38 @@ export function DegradedRainfallDashboard() {
           />
           Force API Failure
         </label>
+        <label style={styles.toggleLabel}>
+          <input
+            type="checkbox"
+            checked={pastSimulationEnabled}
+            onChange={(event) => setPastSimulationEnabled(event.target.checked)}
+            style={styles.toggle}
+          />
+          Replay 2024 Wayanad event
+        </label>
       </div>
+
+      {pastSimulationEnabled && (
+        <div style={styles.simulationCard} aria-live="polite">
+          <div style={styles.metadata}>HISTORICAL SIMULATION · 2024 WAYANAD EVENT</div>
+          <div style={styles.simulationInputs}>
+            <span>Rainfall <strong>41.5 mm/hr</strong></span>
+            <span>Tilt <strong>0.22°/hr</strong></span>
+            <span>Baseline <strong>85</strong></span>
+            <span>NASA EONET <strong>75</strong></span>
+          </div>
+          {historicalSimulation.isLoading ? (
+            <p style={styles.metadata}>Running the server risk engine...</p>
+          ) : historicalSimulation.error ? (
+            <p role="alert" style={styles.error}>Simulation unavailable: {historicalSimulation.error.message}</p>
+          ) : historicalSimulation.data ? (
+            <p style={styles.simulationResult}>
+              Risk engine result: <strong>{historicalSimulation.data.score}/100 · {historicalSimulation.data.level}</strong>
+            </p>
+          ) : null}
+          <small style={styles.disclaimer}>Historical demonstration data — not a live warning or current incident.</small>
+        </div>
+      )}
 
       {isDegraded && (
         <div role="alert" style={styles.banner}>
