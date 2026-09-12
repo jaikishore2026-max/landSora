@@ -5,12 +5,18 @@ import { trpc } from "@/lib/trpc";
 const OPEN_METEO_URL =
   "https://api.open-meteo.com/v1/forecast?latitude=13.0827&longitude=80.2707&hourly=precipitation&forecast_days=1";
 const STATION = { zoneId: "WEATHER-FALLBACK-CHENNAI", lat: 13.0827, lng: 80.2707 };
+const WEATHER_CACHE_KEY = "landsora-open-meteo-weather-cache";
 
 type OpenMeteoResponse = {
   hourly?: {
     time?: string[];
     precipitation?: number[];
   };
+};
+
+type CachedWeather = {
+  payload: OpenMeteoResponse;
+  cachedAt: string;
 };
 
 type Risk = {
@@ -38,6 +44,8 @@ export default function WeatherTelemetryModule({ embedded = false }: { embedded?
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [weatherError, setWeatherError] = useState<string | null>(null);
   const [lastWeatherUpdate, setLastWeatherUpdate] = useState<string | null>(null);
+  const [isUsingCachedWeather, setIsUsingCachedWeather] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" ? true : navigator.onLine);
 
   const telemetryQuery = trpc.telemetry.liveStation.useQuery(STATION, {
     refetchInterval: 60_000,
@@ -54,9 +62,26 @@ export default function WeatherTelemetryModule({ embedded = false }: { embedded?
       }
       const payload = (await response.json()) as OpenMeteoResponse;
       setWeather(payload);
+      localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ payload, cachedAt: new Date().toISOString() } satisfies CachedWeather));
+      setIsUsingCachedWeather(false);
       setLastWeatherUpdate(new Date().toLocaleString());
     } catch (error) {
-      setWeatherError(error instanceof Error ? error.message : "Unable to load Open-Meteo precipitation.");
+      const liveError = error instanceof Error ? error.message : "Unable to load Open-Meteo precipitation.";
+      try {
+        const cached = localStorage.getItem(WEATHER_CACHE_KEY);
+        if (cached) {
+          const { payload, cachedAt } = JSON.parse(cached) as CachedWeather;
+          setWeather(payload);
+          setLastWeatherUpdate(new Date(cachedAt).toLocaleString());
+          setIsUsingCachedWeather(true);
+          setWeatherError(null);
+          return;
+        }
+      } catch {
+        // Keep the live request error visible when the cache is unavailable or invalid.
+      }
+      setIsUsingCachedWeather(false);
+      setWeatherError(liveError);
     } finally {
       setWeatherLoading(false);
     }
@@ -66,6 +91,17 @@ export default function WeatherTelemetryModule({ embedded = false }: { embedded?
     void loadWeather();
     const interval = window.setInterval(() => void loadWeather(), 60_000);
     return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
 
   const rainfallMm = useMemo(
@@ -119,6 +155,16 @@ export default function WeatherTelemetryModule({ embedded = false }: { embedded?
             ? "Dual Telemetry Active"
             : "Physical Sensors Offline — Operating on Open-Meteo Weather API Fallback"}
         </div>
+        {(isUsingCachedWeather || (!isOnline && weather !== null)) && (
+          <div style={styles.cacheBanner} role="status" aria-live="polite">
+            <WifiOff size={16} />
+            <span>
+              <strong>{!isOnline ? "Offline mode" : "Live weather unavailable"}</strong>
+              {" — Showing precipitation from local cache."}
+              {lastWeatherUpdate && <small> Cached at {lastWeatherUpdate}.</small>}
+            </span>
+          </div>
+        )}
 
         <section style={{ ...styles.riskCard, ...(embedded ? styles.embeddedRiskCard : {}) }}>
           <div>
@@ -200,6 +246,7 @@ const styles: Record<string, CSSProperties> = {
   subtitle: { color: "#94a6b2", maxWidth: 650, margin: 0, lineHeight: 1.6 },
   toggle: { display: "inline-flex", alignItems: "center", gap: 8, color: "#f3f6f8", background: "#11171c", border: "1px solid", padding: "11px 14px", cursor: "pointer", font: "600 11px 'JetBrains Mono', monospace" },
   banner: { display: "flex", alignItems: "center", gap: 9, border: "1px solid", padding: "13px 15px", font: "700 12px 'JetBrains Mono', monospace", marginBottom: 18 },
+  cacheBanner: { display: "flex", alignItems: "flex-start", gap: 9, color: "#f2c674", background: "rgba(245,158,11,.12)", border: "1px solid rgba(245,158,11,.35)", padding: "11px 14px", marginBottom: 18, font: "500 11px 'JetBrains Mono', monospace", lineHeight: 1.5 },
   riskCard: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, background: "#11171c", border: "1px solid #2d3e4a", padding: "22px 24px", marginBottom: 18 },
   embeddedRiskCard: { padding: "14px 16px", marginBottom: 14 },
   riskLabel: { fontSize: 28, fontWeight: 800, marginTop: 7 },
