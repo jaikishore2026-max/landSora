@@ -16,9 +16,18 @@ import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import CommunityGroundIntelligencePage from "./pages/CommunityGroundIntelligencePage";
 import WeatherTelemetryModule from "./components/WeatherTelemetryModule";
+import DegradedRainfallDashboard from "./components/DegradedRainfallDashboard";
 
 function WeatherFallbackRoute() {
   return <WeatherTelemetryModule />;
+}
+
+function DegradedRainfallRoute() {
+  return (
+    <main className="min-h-screen bg-[#0B0F12] p-4 sm:p-8">
+      <DegradedRainfallDashboard />
+    </main>
+  );
 }
 
 export default function App() {
@@ -41,6 +50,7 @@ export default function App() {
               <Route path="/community-reports" component={CommunityGroundIntelligencePage} />
               <Route path="/report-review" component={CommunityGroundIntelligencePage} />
               <Route path="/weather-fallback" component={WeatherFallbackRoute} />
+              <Route path="/degraded-rainfall" component={DegradedRainfallRoute} />
               <Route component={NotFound} />
             </Switch>
           </TooltipProvider>
