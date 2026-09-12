@@ -5,7 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { fetchEonetEvents } from "./services/eonetService";
 import { getHistoricalLandslideLayer } from "./services/historicalLandslideService";
-import { calculatePrototypeRisk } from "./services/riskEngine";
+import { calculateHistoricalTelemetryRisk, calculatePrototypeRisk } from "./services/riskEngine";
 import { platformServiceStatus } from "./services/platformServices";
 import { reportServiceStatus } from "./services/reportSyncService";
 import { analyzeRiskWithLLM, answerLeWsQuestion, type AiLanguage, type RiskLevel } from "./services/aiRiskService";
@@ -260,6 +260,12 @@ export const appRouter = router({
   }),
   risk: router({
     score: publicProcedure.input(z.object({ rainfallScore: z.number(), terrainScore: z.number(), historicalLandslideScore: z.number(), recentEventScore: z.number() })).query(({ input }) => calculatePrototypeRisk(input)),
+    historicalSimulation: publicProcedure.input(z.object({
+      rainfallMmHr: z.number(),
+      tiltDegreesPerHour: z.number(),
+      historicalBaselineScore: z.number(),
+      nasaEonetScore: z.number(),
+    })).query(({ input }) => calculateHistoricalTelemetryRisk(input)),
     assistant: publicProcedure.input(z.object({
       question: z.string().min(1).max(500),
       language: z.string().default("EN"),
@@ -559,4 +565,3 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
-
