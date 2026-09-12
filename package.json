@@ -2,6 +2,7 @@
   "name": "content-site",
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "pnpm@9.12.0",
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx watch server/_core/index.ts",
